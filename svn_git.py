@@ -7,20 +7,20 @@ def main():
 
     local_repo_path = '.'
 
-    # Initialize the SVN client
-    svn_client = pysvn.Client()
-
-    # Get the commit history using 'svn log'
-    log_entries = svn_client.log(local_repo_path)
-
     target_svn_revision: int
-    if len(sys.argv) == 1:
+    if len(sys.argv) > 1:
         target_svn_revision = int(sys.argv[1])
     else:
+        svn_client = pysvn.Client()
+        log_entries = svn_client.log(local_repo_path)
         target_svn_revision = log_entries[0]['revision']
         subprocess.run(['svn', 'cleanup', '.', '--remove-unversioned'], check=True)
         subprocess.run(['svn', 'update'], check=True)
-        log_entries = svn_client.log(local_repo_path)
+
+    print(f'using revision {target_svn_revision}')
+
+    svn_client = pysvn.Client()
+    log_entries = svn_client.log(local_repo_path)
 
     # Iterate through the log entries to access commit information
     new_svn_log = []
@@ -58,7 +58,7 @@ def main():
         print(svn_log)
         # input(f'{svn_reversion} {svn_datetime_str}: enter to continue...')
 
-        git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ') + ' +0800'
+        git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ')  # + ' +0800'
         # print(git_datetime_str)
         subprocess.run(['git', 'add', '.'], check=True)
         subprocess.run(['git', 'commit', '-m', f'[svn:{svn_reversion}:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], check=True)
