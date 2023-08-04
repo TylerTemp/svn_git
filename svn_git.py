@@ -4,39 +4,6 @@ import sys
 
 
 def main():
-    # # Replace 'path_to_repo' with the path to your local Git repository
-    # repo = git.Repo('.')
-    #
-    # # Get the reference to the head commit (most recent commit in the current branch)
-    # head_commit = repo.head.commit
-    #
-    # git_commit_target_hash = '7bfcc096803218ff6f4c53be9f7939a378b4ba4e'
-    # svn_merge_commit: Commit | None = None
-    #
-    # # Iterate through the commit history starting from the head commit
-    # # for commit in itertools.islice(repo.iter_commits(head_commit), 2):
-    # for commit in repo.iter_commits(head_commit):
-    #     # Access commit information
-    #     commit_hash = commit.hexsha
-    #     author_name = commit.author.name
-    #     author_email = commit.author.email
-    #     commit_date = commit.authored_datetime
-    #     commit_message = commit.message
-    #
-    #     # Do whatever you want with the commit information
-    #     print(f"Commit Hash: {commit_hash}")
-    #     print(f"Author: {author_name} <{author_email}>")
-    #     print(f"Date: {commit_date}")
-    #     print(f"Message: {commit_message}")
-    #     print("-" * 50)
-    #
-    #     if commit_hash == git_commit_target_hash:
-    #         svn_merge_commit = commit
-    #         break
-    # else:
-    #     assert False, "commit not found"
-    #
-    # print(f'found commit: {svn_merge_commit}')
 
     local_repo_path = '.'
 
@@ -46,8 +13,14 @@ def main():
     # Get the commit history using 'svn log'
     log_entries = svn_client.log(local_repo_path)
 
-    # target_svn_revision: int = 1339
-    target_svn_revision: int = int(sys.argv[1])
+    target_svn_revision: int
+    if len(sys.argv) == 1:
+        target_svn_revision = int(sys.argv[1])
+    else:
+        target_svn_revision = log_entries[0]['revision']
+        subprocess.run(['svn', 'cleanup', '.', '--remove-unversioned'], check=True)
+        subprocess.run(['svn', 'update'], check=True)
+        log_entries = svn_client.log(local_repo_path)
 
     # Iterate through the log entries to access commit information
     new_svn_log = []
@@ -83,13 +56,13 @@ def main():
         subprocess.run(['svn', 'update', '-r', str(svn_reversion), '--set-depth', 'infinity'], check=True)
         subprocess.run(['svn', 'cleanup', '.', '--remove-unversioned'], check=True)
         print(svn_log)
-        input(f'{svn_reversion} {svn_datetime_str}: enter to continue...')
+        # input(f'{svn_reversion} {svn_datetime_str}: enter to continue...')
 
         git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ') + ' +0800'
         # print(git_datetime_str)
         subprocess.run(['git', 'add', '.'], check=True)
-        subprocess.run(['git', 'commit', '-m', f'[svn:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], check=True)
-        input(f'git {git_datetime_str}: enter to continue...')
+        subprocess.run(['git', 'commit', '-m', f'[svn:{svn_reversion}:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], check=True)
+        # input(f'git {git_datetime_str}: enter to continue...')
 
 
 if __name__ == '__main__':

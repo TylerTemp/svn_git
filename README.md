@@ -12,8 +12,10 @@ WARNING:
 Usage:
     
 ```commandline
-svn_git <reversion_number>
+svn_git [<reversion_number>]
 ```
+
+If omit `reversion_number`, it will use the latest local commit reversion, then do `svn cleanup` & `svn update`
 
 Install:
 
