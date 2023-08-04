@@ -58,7 +58,8 @@ def main():
         print(svn_log)
         # input(f'{svn_reversion} {svn_datetime_str}: enter to continue...')
 
-        git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ')  # + ' +0800'
+        # git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ')  # + ' +0800'
+        git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ').replace('Z', '') + ' +0000'
         # print(git_datetime_str)
         subprocess.run(['git', 'add', '.'], check=True)
         subprocess.run(['git', 'commit', '-m', f'[svn:{svn_reversion}:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], check=True)
