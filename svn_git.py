@@ -1,23 +1,36 @@
-import subprocess
-import pysvn
-import sys
+"""
+Usage:
+    svn_git [Options] [--reversion=<target_svn_revision>] [--timezone=<timezone>]
 
+Options:
+    -r, --reversion=<target_svn_revision>  target svn reversion [default: local_last_svn_reversion]
+    -t, --timezone=<timezone>              timezone [default: system_local_timezone]
+"""
+import subprocess
+import sys
+from datetime import datetime
+import pysvn
+import pytz
+import docpie
+from tzlocal import get_localzone
 
 def main():
+
+    args = dict(docpie.docpie(__doc__))
 
     local_repo_path = '.'
 
     target_svn_revision: int
-    if len(sys.argv) > 1:
-        target_svn_revision = int(sys.argv[1])
+    if args['--reversion'] != 'local_last_svn_reversion':
+        target_svn_revision = int(args['--reversion'])
+        print(f'using revision {target_svn_revision}')
     else:
         svn_client = pysvn.Client()
         log_entries = svn_client.log(local_repo_path)
         target_svn_revision = log_entries[0]['revision']
         subprocess.run(['svn', 'cleanup', '.', '--remove-unversioned'], check=True)
         subprocess.run(['svn', 'update'], check=True)
-
-    print(f'using revision {target_svn_revision}')
+        print(f'using latest revision {target_svn_revision}')
 
     svn_client = pysvn.Client()
     log_entries = svn_client.log(local_repo_path)
@@ -49,6 +62,14 @@ def main():
 
     subprocess.run(['svn', 'cleanup', '.', '--remove-unversioned'], check=True)
     # 将新的 svn commit, 喂给 git
+    local_timezone = pytz.timezone('Asia/Shanghai')
+    if args['--timezone'] == 'system_local_timezone':
+        local_timezone = get_localzone()
+    else:
+        local_timezone = pytz.timezone(args['--timezone'])
+
+    print(f'using timezone {local_timezone}')
+
     for svn_log in new_svn_log[::-1]:
         svn_reversion = svn_log['revision']
         svn_datetime_str = svn_log['date']
@@ -59,11 +80,16 @@ def main():
         # input(f'{svn_reversion} {svn_datetime_str}: enter to continue...')
 
         # git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ')  # + ' +0800'
-        git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ').replace('Z', '') + ' +0000'
+        svn_format_string = "%Y-%m-%dT%H:%M:%S.%fZ"
+        commit_datetime = datetime.strptime(svn_datetime_str, svn_format_string).replace(tzinfo=pytz.UTC)
+        tz_commit_datetime = commit_datetime.astimezone(local_timezone)
+        zone_format_string = "%Y-%m-%d %H:%M:%S.%f %z"
+        git_datetime_str = tz_commit_datetime.strftime(zone_format_string)
+
+        # git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ').replace('Z', '') + ' +0000'
         # print(git_datetime_str)
         subprocess.run(['git', 'add', '.'], check=True)
         subprocess.run(['git', 'commit', '-m', f'[svn:{svn_reversion}:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], check=True)
-        # input(f'git {git_datetime_str}: enter to continue...')
 
 
 if __name__ == '__main__':

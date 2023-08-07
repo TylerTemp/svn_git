@@ -27,6 +27,9 @@ setup(
     install_requires=[
         # 'GitPython',
         'pysvn',
+        'pytz',
+        'tzlocal',
+        'docpie',
     ],
     tests_require=[],
     cmdclass={},

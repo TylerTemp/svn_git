@@ -10,15 +10,20 @@ WARNING:
 2.  Ensure to do a `svn update` before this tool
 
 Usage:
-    
-```commandline
-svn_git [<reversion_number>]
+
+```
+Usage:
+    svn_git [Options] [--reversion=<target_svn_revision>] [--timezone=<timezone>]
+
+Options:
+    -r, --reversion=<target_svn_revision>  target svn reversion [default: local_last_svn_reversion]
+    -t, --timezone=<timezone>              timezone [default: system_local_timezone]
 ```
 
 If omit `reversion_number`, it will use the latest local commit reversion, then do `svn cleanup` & `svn update`
 
 Install:
 
-```commandline
+```bash
 pip install -e .
 ```
