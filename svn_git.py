@@ -7,7 +7,7 @@ Options:
     -t, --timezone=<timezone>              timezone [default: system_local_timezone]
 """
 import subprocess
-import sys
+import os
 from datetime import datetime
 import pysvn
 import pytz
@@ -70,6 +70,8 @@ def main():
 
     print(f'using timezone {local_timezone}')
 
+    git_env = os.environ.copy()
+
     for svn_log in new_svn_log[::-1]:
         svn_reversion = svn_log['revision']
         svn_datetime_str = svn_log['date']
@@ -88,8 +90,11 @@ def main():
 
         # git_datetime_str = svn_datetime_str.split('.')[0].replace('T', ' ').replace('Z', '') + ' +0000'
         # print(git_datetime_str)
-        subprocess.run(['git', 'add', '.'], check=True)
-        subprocess.run(['git', 'commit', '-m', f'[svn:{svn_reversion}:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], check=True)
+        # actually will be override by `--date`
+        git_env['GIT_AUTHOR_DATE'] = git_datetime_str
+        git_env['GIT_COMMITTER_DATE'] = git_datetime_str
+        subprocess.run(['git', 'add', '.'], env=git_env, check=True)
+        subprocess.run(['git', 'commit', '-m', f'[svn:{svn_reversion}:{svn_log["author"]}]{svn_log["msg"] or ""}', '--date', git_datetime_str], env=git_env, check=True)
 
 
 if __name__ == '__main__':
