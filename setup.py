@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='snv_git',
-    version='0.0.1',
+    version='0.0.2',
     author='TylerTemp',
     author_email='tylertempdev@gmail.com',
     description='svn commit to git commit',
